@@ -13,7 +13,7 @@ repository = "https://github.com/Brashkie/kryx-flac"
 [workspace.dependencies]
 kryx-flac = { path = "crates/flac-core" }
 napi = { version = "2.16", features = ["napi8"] }
-napi-derive = "2.16"
+napi-derive = "3.7"
 
 [profile.release]
 opt-level = 3
