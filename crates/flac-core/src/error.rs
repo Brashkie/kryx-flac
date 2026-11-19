@@ -1,0 +1,39 @@
+//! Errors surfaced while decoding a FLAC stream.
+
+use std::fmt;
+
+/// A decode error.
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FlacError {
+    /// The stream doesn't start with the `fLaC` marker.
+    BadMagic,
+    /// The stream ended before a value could be fully read.
+    UnexpectedEof,
+    /// A STREAMINFO metadata block was expected but not found.
+    MissingStreamInfo,
+    /// A reserved or unsupported bit pattern was encountered (what/where).
+    Reserved(&'static str),
+    /// A subframe used an unknown type code.
+    BadSubframe(u8),
+    /// The frame sync code didn't match where a frame was expected.
+    BadSync,
+}
+
+impl fmt::Display for FlacError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FlacError::BadMagic => write!(f, "not a FLAC stream (missing fLaC marker)"),
+            FlacError::UnexpectedEof => write!(f, "unexpected end of stream"),
+            FlacError::MissingStreamInfo => write!(f, "missing STREAMINFO metadata block"),
+            FlacError::Reserved(w) => write!(f, "reserved/unsupported value: {w}"),
+            FlacError::BadSubframe(t) => write!(f, "unknown subframe type {t}"),
+            FlacError::BadSync => write!(f, "bad frame sync code"),
+        }
+    }
+}
+
+impl std::error::Error for FlacError {}
+
+/// Result alias for this crate.
+pub type Result<T> = std::result::Result<T, FlacError>;

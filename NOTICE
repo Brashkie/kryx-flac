@@ -1,0 +1,36 @@
+@kryxjs/codecs-flac
+Copyright 2026 Brashkie
+
+This product includes software developed by the Brashkie organization
+(https://github.com/Brashkie) as part of the Kryx multimedia ecosystem.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+---
+
+The FLAC decoder core (`kryx-flac`) is an independent, clean-room
+implementation of the FLAC format from its public specification. It contains
+NO third-party codec code: no libFLAC, no vendored C, no decoder crates.
+The core crate has zero runtime dependencies.
+
+Build- and binding-only dependencies (not FLAC code):
+
+Rust crates:
+  - napi (MIT)         — Node.js binding, flac-node only
+  - napi-derive (MIT)  — Node.js binding, flac-node only
+  - napi-build (MIT)   — build script, flac-node only
+
+Node.js packages (devDependencies only — not shipped):
+  - @napi-rs/cli (MIT)
+  - vitest (MIT)
+  - tsup (MIT)
+  - typescript (Apache-2.0)
+  - @biomejs/biome (MIT / Apache-2.0)
+  - cross-env (MIT)
+
+Full license texts of these dependencies are available in their
+respective package distributions.

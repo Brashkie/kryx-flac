@@ -1,0 +1,20 @@
+[package]
+name = "flac-node"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Node.js native addon for @kryxjs/codecs-flac via napi-rs"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+kryx-flac = { workspace = true }
+napi = { workspace = true }
+napi-derive = { workspace = true }
+
+[build-dependencies]
+napi-build = "2.1"
