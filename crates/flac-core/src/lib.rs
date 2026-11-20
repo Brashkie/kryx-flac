@@ -13,30 +13,34 @@
 //! let interleaved = audio.interleaved();
 //! ```
 //!
-//! ## Scope (M1)
+//! ## Scope
 //!
-//! Decoder only: `fLaC` marker + STREAMINFO, frame headers, the four subframe
-//! types (CONSTANT, VERBATIM, FIXED, LPC), partitioned Rice residual, and all
+//! Decoder: `fLaC` marker + STREAMINFO, frame headers, the four subframe types
+//! (CONSTANT, VERBATIM, FIXED, LPC), partitioned Rice residual, and all
 //! inter-channel decorrelation modes (independent, left/side, right/side,
 //! mid/side). Validated bit-exact against FFmpeg on real files.
 //!
-//! Deferred: encoder, seeking, metadata beyond STREAMINFO (tags, pictures),
-//! incremental/streaming decode, CRC verification (frame CRCs are parsed but not
-//! checked yet).
+//! Also: header CRC-8 + frame CRC-16 verification, metadata (VORBIS_COMMENT
+//! tags, PICTURE cover art, SEEKTABLE), a metadata-only read
+//! ([`read_metadata`]), and sample-range decoding with seeking
+//! ([`decode_range`]).
+//!
+//! Deferred: encoder, incremental/streaming decode (later milestones).
 
 #![forbid(unsafe_code)]
 
 mod bitreader;
+mod crc;
 mod decoder;
 mod error;
 mod frame;
 mod metadata;
 mod subframe;
 
-pub use decoder::{decode, FlacAudio};
+pub use decoder::{decode, decode_range, read_metadata, FlacAudio};
 pub use error::{FlacError, Result};
 pub use frame::ChannelAssignment;
-pub use metadata::StreamInfo;
+pub use metadata::{FlacMetadata, Picture, SeekPoint, StreamInfo};
 
 /// Version of this crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

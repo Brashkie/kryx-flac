@@ -39,6 +39,24 @@ const audio = decode(readFileSync('cancion.flac'))
 const { decode } = require('@kryxjs/codecs-flac')
 ```
 
+### Metadatos, seeking, CRC
+
+```ts
+import { readMetadata, decodeRange } from '@kryxjs/codecs-flac'
+
+// Tags + carátula, sin decodificar audio:
+const meta = readMetadata(buf)
+meta.tags            // [{ key: 'TITLE', value: '…' }, …]
+meta.pictures        // [{ mime, width, height, data: Buffer }, …]
+meta.seekPoints      // [{ sample, offset, frameSamples }, …]
+
+// Decodificar solo una ventana de muestras (usa el seek table si existe):
+const slice = decodeRange(buf, 44_100, 1_000) // 1000 muestras desde 44 100
+```
+
+Se verifica el CRC-8 de cabecera y el CRC-16 de cada frame al decodificar;
+`decode` lanza error si el stream está corrupto.
+
 ## Qué decodifica
 
 - Marca `fLaC` + STREAMINFO (otros bloques de metadatos se omiten)
@@ -72,8 +90,10 @@ npm run lint           # biome
 
 - **M1** — núcleo decodificador. _hecho_
 - **M2** — bindings N-API + SDK TypeScript (`@kryxjs/codecs-flac`). _hecho_
-- **M3** — verificación de CRC de frame, metadatos (VORBIS_COMMENT / imágenes),
-  búsqueda por muestra.
-- **M4** — codificador; 0.1.0 estable con benchmarks vs libFLAC.
+- **M3** — verificación de CRC, metadatos (tags / carátula / seek table),
+  decodificación por rango. _hecho_
+- **M4** — codificador; estable con benchmarks vs libFLAC.
+- **M5** — rendimiento: kernels SIMD / Zig en los bucles calientes, medido vs libFLAC.
+- **M6** — decodificación en streaming, WASM, fuzzing + el corpus oficial de FLAC.
 
 Ver [ROADMAP.md](./ROADMAP.md). Parte del ecosistema Kryx · Apache-2.0

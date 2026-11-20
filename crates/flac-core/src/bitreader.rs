@@ -26,6 +26,41 @@ impl<'a> BitReader<'a> {
         self.data.len() * 8
     }
 
+    /// Current byte position (only meaningful on a byte boundary).
+    pub fn byte_pos(&self) -> usize {
+        self.pos / 8
+    }
+
+    /// Borrow the raw bytes in `[start, end)` (used to compute frame CRCs).
+    pub fn bytes(&self, start: usize, end: usize) -> Result<&'a [u8]> {
+        self.data.get(start..end).ok_or(FlacError::UnexpectedEof)
+    }
+
+    /// Read `n` bytes as a big-endian unsigned value. The reader must be byte
+    /// aligned; advances by `n` bytes.
+    pub fn read_bytes_be(&mut self, n: u32) -> Result<u64> {
+        self.read(n * 8)
+    }
+
+    /// Read `n` bytes as a little-endian unsigned value (VORBIS_COMMENT fields
+    /// are little-endian). The reader must be byte aligned.
+    pub fn read_bytes_le(&mut self, n: u32) -> Result<u64> {
+        let mut v: u64 = 0;
+        for i in 0..n {
+            let byte = self.read(8)?;
+            v |= byte << (8 * i);
+        }
+        Ok(v)
+    }
+
+    /// Read `n` raw bytes into an owned vector. The reader must be byte aligned.
+    pub fn read_vec(&mut self, n: usize) -> Result<Vec<u8>> {
+        let start = self.byte_pos();
+        let slice = self.bytes(start, start + n)?.to_vec();
+        self.pos += n * 8;
+        Ok(slice)
+    }
+
     /// Seek to an absolute bit position.
     pub fn seek_bit(&mut self, pos: usize) {
         self.pos = pos;

@@ -37,6 +37,24 @@ const audio = decode(readFileSync('song.flac'))
 const { decode } = require('@kryxjs/codecs-flac')
 ```
 
+### Metadata, seeking, CRC
+
+```ts
+import { readMetadata, decodeRange } from '@kryxjs/codecs-flac'
+
+// Tags + cover art, without decoding any audio:
+const meta = readMetadata(buf)
+meta.tags            // [{ key: 'TITLE', value: '…' }, …]
+meta.pictures        // [{ mime, width, height, data: Buffer }, …]
+meta.seekPoints      // [{ sample, offset, frameSamples }, …]
+
+// Decode only a sample window (uses the seek table when present):
+const slice = decodeRange(buf, 44_100, 1_000) // 1000 samples from 44 100
+```
+
+Every frame's header CRC-8 and footer CRC-16 are verified while decoding;
+`decode` throws on a corrupt stream.
+
 ## What it decodes
 
 - `fLaC` marker + STREAMINFO (other metadata blocks skipped)
@@ -70,7 +88,9 @@ npm run lint           # biome
 
 - **M1** — decoder core. _done_
 - **M2** — N-API bindings + TypeScript SDK (`@kryxjs/codecs-flac`). _done_
-- **M3** — frame CRC verification, metadata (VORBIS_COMMENT / pictures), seeking.
-- **M4** — encoder; stable 0.1.0 with benchmarks vs libFLAC.
+- **M3** — CRC verification, metadata (tags / cover art / seek table), seeking. _done_
+- **M4** — encoder; stable with benchmarks vs libFLAC.
+- **M5** — performance: SIMD / Zig kernels on the hot loops, measured vs libFLAC.
+- **M6** — streaming/incremental decode, WASM, fuzzing + the official FLAC corpus.
 
 See [ROADMAP.md](./ROADMAP.md). Part of the Kryx ecosystem · Apache-2.0

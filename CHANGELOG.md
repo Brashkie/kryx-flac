@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.2.0] — 2026-11-19
+
+Third milestone (M3): robustness — CRC verification, metadata, and seeking.
+
+### Added
+- **CRC verification**: every frame's header CRC-8 and footer CRC-16 are checked
+  while decoding; `decode` now returns `CrcMismatch` on a corrupt stream.
+- **Metadata**: VORBIS_COMMENT tags, PICTURE (cover art) and SEEKTABLE are parsed
+  and surfaced on `FlacAudio` / the decode result (`tags`, `pictures`).
+- `readMetadata(bytes)` — read tags, pictures and seek points without decoding
+  any audio.
+- `decodeRange(bytes, start, count)` — decode only a sample window, using the
+  seek table to jump when present.
+- Core API: `read_metadata`, `decode_range`, `FlacMetadata`, `Picture`,
+  `SeekPoint`, `FlacAudio::tag()`.
+- Conformance fixtures: a tagged file with embedded PNG cover art, a file with a
+  real (CRC-validated) seek table, and a corrupted file — tags/pictures/seeking
+  verified and CRC corruption detected, at both the Rust and SDK layers.
+
 ## [0.1.0] — 2026-11-19
 
 Second milestone (M2): the decoder shipped to Node.js.

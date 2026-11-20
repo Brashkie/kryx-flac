@@ -310,7 +310,9 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { decode, coreVersion } = nativeBinding
+const { decode, decodeRange, readMetadata, coreVersion } = nativeBinding
 
 module.exports.decode = decode
+module.exports.decodeRange = decodeRange
+module.exports.readMetadata = readMetadata
 module.exports.coreVersion = coreVersion

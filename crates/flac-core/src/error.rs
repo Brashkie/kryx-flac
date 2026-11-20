@@ -18,6 +18,10 @@ pub enum FlacError {
     BadSubframe(u8),
     /// The frame sync code didn't match where a frame was expected.
     BadSync,
+    /// A frame CRC didn't match (header CRC-8 or frame CRC-16): corrupt stream.
+    CrcMismatch(&'static str),
+    /// A metadata block was malformed (e.g. a bad VORBIS_COMMENT / PICTURE).
+    BadMetadata(&'static str),
 }
 
 impl fmt::Display for FlacError {
@@ -29,6 +33,8 @@ impl fmt::Display for FlacError {
             FlacError::Reserved(w) => write!(f, "reserved/unsupported value: {w}"),
             FlacError::BadSubframe(t) => write!(f, "unknown subframe type {t}"),
             FlacError::BadSync => write!(f, "bad frame sync code"),
+            FlacError::CrcMismatch(w) => write!(f, "CRC mismatch ({w}): corrupt stream"),
+            FlacError::BadMetadata(w) => write!(f, "malformed metadata block: {w}"),
         }
     }
 }
