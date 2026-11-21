@@ -173,6 +173,36 @@ pub fn read_metadata(input: Buffer) -> napi::Result<FlacMetadata> {
     })
 }
 
+/// Options for [`encode`].
+#[napi(object)]
+pub struct EncodeOptions {
+    /// Sample rate in Hz.
+    pub sample_rate: u32,
+    /// Bits per sample (4..=32).
+    pub bits_per_sample: u32,
+    /// Samples per block per channel (default 4096 when omitted or 0).
+    pub block_size: Option<u32>,
+    /// VORBIS_COMMENT tags to embed.
+    pub tags: Option<Vec<FlacTag>>,
+}
+
+/// Encode interleaved PCM (`ch0[0], ch1[0], …`) to a complete FLAC file.
+#[napi]
+pub fn encode(samples: Int32Array, channels: u32, opts: EncodeOptions) -> napi::Result<Buffer> {
+    let mut core = kryx_flac::EncodeOptions::new(opts.sample_rate, opts.bits_per_sample as u8);
+    if let Some(bs) = opts.block_size {
+        if bs > 0 {
+            core.block_size = bs;
+        }
+    }
+    if let Some(tags) = opts.tags {
+        core.tags = tags.into_iter().map(|t| (t.key, t.value)).collect();
+    }
+    let out = kryx_flac::encode_interleaved(samples.as_ref(), channels as usize, &core)
+        .map_err(|e| napi::Error::from_reason(e.to_string()))?;
+    Ok(out.into())
+}
+
 /// Version of the native `kryx-flac` core crate.
 #[napi]
 pub fn core_version() -> String {

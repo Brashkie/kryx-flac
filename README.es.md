@@ -57,6 +57,21 @@ const slice = decodeRange(buf, 44_100, 1_000) // 1000 muestras desde 44 100
 Se verifica el CRC-8 de cabecera y el CRC-16 de cada frame al decodificar;
 `decode` lanza error si el stream está corrupto.
 
+### Codificación
+
+```ts
+import { encode } from '@kryxjs/codecs-flac'
+
+// PCM i32 intercalado: ch0[0], ch1[0], ch0[1], …
+const flac = encode(samples, 2, { sampleRate: 44100, bitsPerSample: 16 })
+```
+
+Encoder lossless: por frame elige la mejor decorrelación estéreo (left/side,
+right/side, mid/side) y el subframe más barato (CONSTANT, FIXED, LPC, VERBATIM)
+con búsqueda de Rice particionado. En las señales de prueba su salida es algo
+menor que FFmpeg/libFLAC con `-compression_level 8`, y FFmpeg la decodifica
+bit a bit. Los `tags` opcionales se insertan como VORBIS_COMMENT.
+
 ## Qué decodifica
 
 - Marca `fLaC` + STREAMINFO (otros bloques de metadatos se omiten)
@@ -92,7 +107,7 @@ npm run lint           # biome
 - **M2** — bindings N-API + SDK TypeScript (`@kryxjs/codecs-flac`). _hecho_
 - **M3** — verificación de CRC, metadatos (tags / carátula / seek table),
   decodificación por rango. _hecho_
-- **M4** — codificador; estable con benchmarks vs libFLAC.
+- **M4** — codificador lossless (FIXED + LPC + decorrelación estéreo). _hecho_
 - **M5** — rendimiento: kernels SIMD / Zig en los bucles calientes, medido vs libFLAC.
 - **M6** — decodificación en streaming, WASM, fuzzing + el corpus oficial de FLAC.
 

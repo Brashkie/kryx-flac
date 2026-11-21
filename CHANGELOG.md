@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0] — 2026-11-21
+
+Fourth milestone (M4): a lossless FLAC **encoder**.
+
+### Added
+- `encode(channels, opts)` / `encode_interleaved(...)` in the core, and
+  `encode(samples, channels, opts)` in the SDK — produce a complete, valid FLAC
+  stream that FFmpeg decodes bit-exact.
+- Per-subframe search over CONSTANT, FIXED (orders 0–4) and LPC (up to order 12,
+  Welch-windowed autocorrelation + Levinson-Durbin + libFLAC-style coefficient
+  quantization), falling back to VERBATIM, with a partitioned-Rice parameter
+  search (5-bit params).
+- Per-frame stereo decorrelation: independent / left-side / right-side /
+  mid-side, chosen by coded size.
+- Optional VORBIS_COMMENT tags via `EncodeOptions.tags`.
+- `BitWriter`, `crc` reused for header CRC-8 / frame CRC-16 on write.
+- Tests: encode→decode round-trips (lossless) over real + synthetic audio, tag
+  round-trip; validated bit-exact through FFmpeg and competitive with libFLAC at
+  `-compression_level 8` on the test signals.
+
 ## [0.2.0] — 2026-11-19
 
 Third milestone (M3): robustness — CRC verification, metadata, and seeking.

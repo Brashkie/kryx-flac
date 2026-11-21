@@ -1,13 +1,14 @@
-//! @kryxjs/codecs-flac — a dependency-free FLAC decoder.
+//! @kryxjs/codecs-flac — a dependency-free FLAC codec.
 //
-// Pure-Rust decoder (no third-party, no vendored C) exposed through N-API.
-// `decode(bytes)` returns the full file's interleaved PCM plus stream info,
-// tags and cover art; `decodeRange` seeks; `readMetadata` skips the audio.
+// Pure-Rust decoder and encoder (no third-party, no vendored C) through N-API.
+// `decode` returns interleaved PCM + stream info, tags and cover art;
+// `decodeRange` seeks; `readMetadata` skips the audio; `encode` writes FLAC.
 
-import { type DecodedFlac, type FlacMetadata, native } from './native.js'
+import { type DecodedFlac, type EncodeOptions, type FlacMetadata, native } from './native.js'
 
 export type {
   DecodedFlac,
+  EncodeOptions,
   FlacMetadata,
   FlacPicture,
   FlacSeekPoint,
@@ -43,5 +44,14 @@ export function readMetadata(data: Uint8Array): FlacMetadata {
   return native.readMetadata(toBuffer(data))
 }
 
+/**
+ * Encode interleaved PCM (`ch0[0], ch1[0], …`) to a complete FLAC file,
+ * returning the bytes as a `Buffer`. Lossless; picks per-frame stereo
+ * decorrelation and the cheapest subframe (CONSTANT / FIXED / LPC / VERBATIM).
+ */
+export function encode(samples: Int32Array, channels: number, opts: EncodeOptions): Buffer {
+  return native.encode(samples, channels, opts)
+}
+
 /** Version of the `@kryxjs/codecs-flac` package. */
-export const VERSION = '0.2.0'
+export const VERSION = '0.3.0'

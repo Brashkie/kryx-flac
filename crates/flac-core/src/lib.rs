@@ -30,14 +30,17 @@
 #![forbid(unsafe_code)]
 
 mod bitreader;
+mod bitwriter;
 mod crc;
 mod decoder;
+mod encoder;
 mod error;
 mod frame;
 mod metadata;
 mod subframe;
 
 pub use decoder::{decode, decode_range, read_metadata, FlacAudio};
+pub use encoder::{encode, encode_interleaved, EncodeOptions};
 pub use error::{FlacError, Result};
 pub use frame::ChannelAssignment;
 pub use metadata::{FlacMetadata, Picture, SeekPoint, StreamInfo};

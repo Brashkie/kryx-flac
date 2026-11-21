@@ -17,10 +17,12 @@ Metadata: VORBIS_COMMENT tags, PICTURE cover art, SEEKTABLE. `read_metadata`
 (audio-free) and `decode_range` (sample-window decode with seek-table jump).
 Surfaced through the SDK as `readMetadata` / `decodeRange` + `tags`/`pictures`.
 
-## M4 — Encoder + stable
-FLAC **encoder** (FIXED first, then LPC with a measured order search), then a
-stable release: and benchmarks vs libFLAC (the point of owning it: measure,
-then prove).
+## M4 — Encoder ✅
+Lossless FLAC **encoder**: CONSTANT/FIXED/LPC/VERBATIM subframe search,
+partitioned-Rice coding, per-frame stereo decorrelation (L/S, R/S, M/S), optional
+VORBIS_COMMENT tags. Output is bit-exact in FFmpeg and, on the test signals,
+slightly smaller than libFLAC at `-compression_level 8`. LPC: Welch window +
+Levinson-Durbin + libFLAC-style quantization (order ≤ 12).
 
 ## M5 — Performance
 SIMD / Zig (or ASM) kernels on the hot loops — LPC prediction and Rice

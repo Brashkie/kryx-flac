@@ -1,6 +1,6 @@
 {
   "name": "@kryxjs/codecs-flac",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A dependency-free FLAC decoder for the Kryx multimedia ecosystem — pure Rust core with a TypeScript SDK (ESM + CJS)",
   "type": "commonjs",
   "main": "./dist/index.cjs",
@@ -91,13 +91,13 @@
     }
   },
   "optionalDependencies": {
-    "@kryxjs/codecs-flac-win32-x64-msvc": "0.2.0",
-    "@kryxjs/codecs-flac-win32-arm64-msvc": "0.2.0",
-    "@kryxjs/codecs-flac-darwin-x64": "0.2.0",
-    "@kryxjs/codecs-flac-darwin-arm64": "0.2.0",
-    "@kryxjs/codecs-flac-linux-x64-gnu": "0.2.0",
-    "@kryxjs/codecs-flac-linux-x64-musl": "0.2.0",
-    "@kryxjs/codecs-flac-linux-arm64-gnu": "0.2.0"
+    "@kryxjs/codecs-flac-win32-x64-msvc": "0.3.0",
+    "@kryxjs/codecs-flac-win32-arm64-msvc": "0.3.0",
+    "@kryxjs/codecs-flac-darwin-x64": "0.3.0",
+    "@kryxjs/codecs-flac-darwin-arm64": "0.3.0",
+    "@kryxjs/codecs-flac-linux-x64-gnu": "0.3.0",
+    "@kryxjs/codecs-flac-linux-x64-musl": "0.3.0",
+    "@kryxjs/codecs-flac-linux-arm64-gnu": "0.3.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

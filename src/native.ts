@@ -72,11 +72,24 @@ export interface FlacMetadata {
   seekPoints: FlacSeekPoint[]
 }
 
+/** Options for {@link NativeBindings.encode}. */
+export interface EncodeOptions {
+  /** Sample rate in Hz. */
+  sampleRate: number
+  /** Bits per sample (4..=32). */
+  bitsPerSample: number
+  /** Samples per block per channel (default 4096). */
+  blockSize?: number
+  /** VORBIS_COMMENT tags to embed. */
+  tags?: FlacTag[]
+}
+
 /** The native addon surface. */
 export interface NativeBindings {
   decode(input: Buffer): DecodedFlac
   decodeRange(input: Buffer, start: number, count: number): DecodedFlac
   readMetadata(input: Buffer): FlacMetadata
+  encode(samples: Int32Array, channels: number, opts: EncodeOptions): Buffer
   coreVersion(): string
 }
 
