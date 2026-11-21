@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.1] — 2026-11-21
+
+Performance (M5, phase 1): measured, then optimized. No API or format change;
+output stays bit-identical and FFmpeg-conformant.
+
+### Added
+- Criterion benchmark harness (`cargo bench`) for encode + decode throughput.
+
+### Changed
+- **Encoder ~11× faster**: the partitioned-Rice search now computes per-partition
+  zig-zag sums once and merges them up the partition-order tree, with an O(1)
+  analytic parameter estimate per `k` (libFLAC-style) instead of 31 full passes
+  per partition. On a 1 s 44.1 kHz stereo signal: ~215 ms → ~19 ms. Compression
+  ratio unchanged (still slightly better than libFLAC `-8` on the test signals).
+- **Decoder faster bit reader**: `read` consumes whole byte chunks and
+  `read_unary` scans bytes with `leading_zeros`, instead of bit by bit.
+
 ## [0.3.0] — 2026-11-21
 
 Fourth milestone (M4): a lossless FLAC **encoder**.

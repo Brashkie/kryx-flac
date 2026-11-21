@@ -54,6 +54,6 @@ describe('decode (unit)', () => {
   })
 
   it('exposes the package VERSION', () => {
-    expect(VERSION).toBe('0.3.0')
+    expect(VERSION).toBe('0.3.1')
   })
 })

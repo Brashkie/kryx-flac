@@ -88,5 +88,18 @@ export declare function decodeRange(input: Buffer, start: number, count: number)
  * audio. Cheap: stops at the first audio frame.
  */
 export declare function readMetadata(input: Buffer): FlacMetadata
+/** Options for [`encode`]. */
+export interface EncodeOptions {
+  /** Sample rate in Hz. */
+  sampleRate: number
+  /** Bits per sample (4..=32). */
+  bitsPerSample: number
+  /** Samples per block per channel (default 4096 when omitted or 0). */
+  blockSize?: number
+  /** VORBIS_COMMENT tags to embed. */
+  tags?: Array<FlacTag>
+}
+/** Encode interleaved PCM (`ch0[0], ch1[0], …`) to a complete FLAC file. */
+export declare function encode(samples: Int32Array, channels: number, opts: EncodeOptions): Buffer
 /** Version of the native `kryx-flac` core crate. */
 export declare function coreVersion(): string

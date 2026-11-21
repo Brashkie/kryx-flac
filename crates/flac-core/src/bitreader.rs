@@ -74,17 +74,31 @@ impl<'a> BitReader<'a> {
     }
 
     /// Read `n` bits (0..=64) as an unsigned value, MSB-first.
+    ///
+    /// Consumes whole chunks of each byte at a time rather than bit by bit.
     pub fn read(&mut self, n: u32) -> Result<u64> {
-        let mut v: u64 = 0;
-        for _ in 0..n {
-            let byte = *self
-                .data
-                .get(self.pos >> 3)
-                .ok_or(FlacError::UnexpectedEof)?;
-            let bit = (byte >> (7 - (self.pos & 7))) & 1;
-            v = (v << 1) | bit as u64;
-            self.pos += 1;
+        if n == 0 {
+            return Ok(0);
         }
+        let end = self.pos + n as usize;
+        if end > self.data.len() * 8 {
+            return Err(FlacError::UnexpectedEof);
+        }
+        let mut v: u64 = 0;
+        let mut pos = self.pos;
+        let mut need = n;
+        while need > 0 {
+            let byte = self.data[pos >> 3] as u64;
+            let bit_off = (pos & 7) as u32; // bits already consumed in this byte
+            let avail = 8 - bit_off; // bits left in this byte
+            let take = need.min(avail);
+            // Drop the `avail - take` low bits, then keep the low `take` bits.
+            let chunk = (byte >> (avail - take)) & ((1u64 << take) - 1);
+            v = (v << take) | chunk;
+            pos += take as usize;
+            need -= take;
+        }
+        self.pos = pos;
         Ok(v)
     }
 
@@ -100,12 +114,30 @@ impl<'a> BitReader<'a> {
     }
 
     /// Read a unary-coded value: the count of 0 bits before the terminating 1.
+    ///
+    /// Scans a byte at a time, using `leading_zeros` to count runs of zeros.
     pub fn read_unary(&mut self) -> Result<u32> {
-        let mut q = 0;
-        while self.read(1)? == 0 {
-            q += 1;
+        let mut q = 0u32;
+        loop {
+            let byte = *self
+                .data
+                .get(self.pos >> 3)
+                .ok_or(FlacError::UnexpectedEof)?;
+            let bit_off = (self.pos & 7) as u32;
+            // Shift the current bit up to the MSB; zeros above it don't count.
+            let window = (byte as u32) << (24 + bit_off);
+            if window == 0 {
+                // The rest of this byte is all zeros; move to the next byte.
+                let avail = 8 - bit_off;
+                q += avail;
+                self.pos += avail as usize;
+            } else {
+                let lead = window.leading_zeros();
+                q += lead;
+                self.pos += (lead + 1) as usize; // zeros + the terminating 1
+                return Ok(q);
+            }
         }
-        Ok(q)
     }
 }
 

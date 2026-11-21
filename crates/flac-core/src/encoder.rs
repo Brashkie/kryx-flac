@@ -386,7 +386,7 @@ fn best_lpc(x: &[i32], bps: u32) -> Option<LpcCandidate> {
         let order = coeffs.len();
         let (qcoeff, shift) = quantize(coeffs, LPC_PRECISION);
         let residual = lpc_residual(x, &qcoeff, shift, order);
-        let (_, res_bits) = best_partition(&residual, order, n);
+        let res_bits = plan_rice(&residual, order, n).bits;
         let bits =
             8 + order as u64 * bps as u64 + 4 + 5 + order as u64 * LPC_PRECISION as u64 + res_bits;
         if best.as_ref().map_or(true, |b| bits < b.bits) {
@@ -543,8 +543,8 @@ fn abs_sum(r: &[i64]) -> u128 {
 }
 
 fn estimate_fixed_bits(_x: &[i32], order: usize, residual: &[i64], bps: u32) -> u64 {
-    let (_po, bits) = best_partition(residual, order, order + residual.len());
-    8 + order as u64 * bps as u64 + bits
+    let plan = plan_rice(residual, order, order + residual.len());
+    8 + order as u64 * bps as u64 + plan.bits
 }
 
 /// Zig-zag map a signed residual to unsigned.
@@ -552,74 +552,103 @@ fn zigzag(v: i64) -> u64 {
     ((v << 1) ^ (v >> 63)) as u64
 }
 
-/// Bits to Rice-code `res` with parameter `k`.
-fn rice_bits(res: &[i64], k: u32) -> u64 {
-    res.iter().map(|&v| (zigzag(v) >> k) + 1 + k as u64).sum()
+/// A chosen partitioned-Rice layout: partition order, one parameter per
+/// partition, and the estimated coded bit count including the field headers.
+struct RicePlan {
+    po: u32,
+    params: Vec<u32>,
+    bits: u64,
 }
 
-/// Best Rice parameter (0..=30) for a partition and its bit cost.
-fn best_rice_param(res: &[i64]) -> (u32, u64) {
-    let mut best_k = 0;
-    let mut best = rice_bits(res, 0);
-    for k in 1..=30 {
-        let b = rice_bits(res, k);
-        if b < best {
-            best = b;
+/// Best Rice parameter for a partition from its zig-zag `sum` and sample
+/// `count`, using the standard estimate `count*(1+k) + (sum >> k)`. This is
+/// O(1) arithmetic per `k` — no per-sample pass.
+fn best_k(sum: u128, count: u64) -> (u32, u64) {
+    let mut best_k = 0u32;
+    let mut best = u64::MAX;
+    for k in 0..=30u32 {
+        let bits = count * (1 + k as u64) + (sum >> k) as u64;
+        if bits < best {
+            best = bits;
             best_k = k;
         }
     }
     (best_k, best)
 }
 
-/// Choose the partition order (0..=MAX) minimizing total residual bits.
-/// `block` is the full block size (order + residual.len()). Returns
-/// `(partition_order, total_bits_including_headers)`.
-fn best_partition(residual: &[i64], order: usize, block: usize) -> (u32, u64) {
-    let mut best_po = 0u32;
-    let mut best_bits = u64::MAX;
-    for po in 0..=MAX_PARTITION_ORDER {
+/// Plan the partitioned-Rice coding of `residual` once: compute per-partition
+/// zig-zag sums at the finest order in a single pass, then evaluate coarser
+/// orders by merging adjacent partitions. `block` is `order + residual.len()`.
+fn plan_rice(residual: &[i64], order: usize, block: usize) -> RicePlan {
+    // Largest partition order with equal partitions and a non-empty partition 0.
+    let mut finest = 0u32;
+    for po in (0..=MAX_PARTITION_ORDER).rev() {
         let parts = 1usize << po;
-        if block % parts != 0 {
-            continue;
-        }
-        let part_len = block / parts;
-        if part_len <= order {
-            continue;
-        }
-        // 4-bit partition order field + each partition: 5-bit param + codes.
-        let mut bits = 4u64;
-        let mut idx = 0usize;
-        for p in 0..parts {
-            let count = if p == 0 { part_len - order } else { part_len };
-            let slice = &residual[idx..idx + count];
-            let (_k, b) = best_rice_param(slice);
-            bits += 5 + b;
-            idx += count;
-        }
-        if bits < best_bits {
-            best_bits = bits;
-            best_po = po;
+        if block % parts == 0 && (block >> po) > order {
+            finest = po;
+            break;
         }
     }
-    (best_po, best_bits)
+    let fparts = 1usize << finest;
+    let part_len = block >> finest;
+
+    // Per fine-partition zig-zag sums and sample counts (single pass over data).
+    let mut sums = vec![0u128; fparts];
+    let mut counts = vec![0u64; fparts];
+    let mut idx = 0usize;
+    for p in 0..fparts {
+        let count = if p == 0 { part_len - order } else { part_len };
+        let mut s = 0u128;
+        for &v in &residual[idx..idx + count] {
+            s += zigzag(v) as u128;
+        }
+        sums[p] = s;
+        counts[p] = count as u64;
+        idx += count;
+    }
+
+    // Evaluate each order 0..=finest by merging adjacent fine partitions.
+    let mut best = RicePlan {
+        po: 0,
+        params: Vec::new(),
+        bits: u64::MAX,
+    };
+    for po in 0..=finest {
+        let parts = 1usize << po;
+        let group = fparts / parts;
+        let mut bits = 4u64; // partition-order field
+        let mut params = Vec::with_capacity(parts);
+        for j in 0..parts {
+            let mut s = 0u128;
+            let mut c = 0u64;
+            for g in 0..group {
+                s += sums[j * group + g];
+                c += counts[j * group + g];
+            }
+            let (k, b) = best_k(s, c);
+            bits += 5 + b;
+            params.push(k);
+        }
+        if bits < best.bits {
+            best = RicePlan { po, params, bits };
+        }
+    }
+    best
 }
 
-/// Write the residual coding (method 0: 4-bit Rice parameters).
+/// Write the residual coding (method 1: 5-bit Rice parameters).
 fn write_residual(w: &mut BitWriter, residual: &[i64], order: usize, block: usize) {
-    let (po, _) = best_partition(residual, order, block);
-    let parts = 1usize << po;
-    let part_len = block / parts;
+    let plan = plan_rice(residual, order, block);
+    let part_len = block >> plan.po;
 
     w.write(1, 2); // residual method 1 (5-bit Rice params)
-    w.write(po as u64, 4);
+    w.write(plan.po as u64, 4);
 
     let mut idx = 0usize;
-    for p in 0..parts {
+    for (p, &k) in plan.params.iter().enumerate() {
         let count = if p == 0 { part_len - order } else { part_len };
-        let slice = &residual[idx..idx + count];
-        let (k, _) = best_rice_param(slice);
         w.write(k as u64, 5);
-        for &v in slice {
+        for &v in &residual[idx..idx + count] {
             let u = zigzag(v);
             w.write_unary((u >> k) as u32);
             if k > 0 {

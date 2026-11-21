@@ -99,7 +99,17 @@ npm run build          # addon nativo (release) + bundle TS dual
 npm run build:debug    # nativo sin optimizar, más rápido
 npm test               # tests del núcleo Rust + vitest (unit + integración)
 npm run lint           # biome
+cargo bench -p kryx-flac   # throughput de encode + decode (Criterion)
 ```
+
+### Rendimiento
+
+Medido con `cargo bench` sobre 1 s de estéreo a 44.1 kHz. La búsqueda de Rice
+particionado del encoder se calcula en una sola pasada con estimación analítica
+del parámetro (estilo libFLAC), lo que bajó el encode de ~215 ms a ~19 ms (~11×)
+sin cambiar la salida. El decode usa un lector de bits por chunks. Sigue (M5
+fase 2): kernels SIMD / Zig en los bucles de LPC y residual, medidos contra esta
+base portable.
 
 ## Hoja de ruta
 

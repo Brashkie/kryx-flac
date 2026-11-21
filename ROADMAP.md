@@ -24,10 +24,13 @@ VORBIS_COMMENT tags. Output is bit-exact in FFmpeg and, on the test signals,
 slightly smaller than libFLAC at `-compression_level 8`. LPC: Welch window +
 Levinson-Durbin + libFLAC-style quantization (order ≤ 12).
 
-## M5 — Performance
-SIMD / Zig (or ASM) kernels on the hot loops — LPC prediction and Rice
-decode — each measured against libFLAC before it lands. The "beat the
-incumbent" phase.
+## M5 — Performance (in progress)
+Measure first, then optimize. **Phase 1 done** (0.3.1): Criterion bench harness;
+encoder partitioned-Rice search rewritten to a single-pass sum tree + analytic
+parameter estimate (~11× faster encode, same output); chunked bit reader for
+decode. **Phase 2**: SIMD / Zig (or ASM) kernels on the hot loops — LPC
+prediction, autocorrelation, Rice decode — each measured against this portable
+baseline before it lands. The "beat the incumbent on speed" phase.
 
 ## M6 — Streaming + full conformance
 Incremental/streaming decode (frame-by-frame, no full-file buffer), 24/32-bit

@@ -54,4 +54,4 @@ export function encode(samples: Int32Array, channels: number, opts: EncodeOption
 }
 
 /** Version of the `@kryxjs/codecs-flac` package. */
-export const VERSION = '0.3.0'
+export const VERSION = '0.3.1'
