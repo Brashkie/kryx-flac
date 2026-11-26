@@ -11,7 +11,7 @@ description = "A dependency-free FLAC decoder in pure Rust — part of the Kryx 
 [dependencies]
 
 [dev-dependencies]
-criterion = { version = "0.5", default-features = false }
+criterion = { version = "0.8", default-features = false }
 
 [[bench]]
 name = "codec"
